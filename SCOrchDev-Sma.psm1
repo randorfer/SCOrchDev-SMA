@@ -676,26 +676,40 @@ Function Import-SmaPowerShellModule
         [Parameter(Mandatory = $False)][string]  $WebservicePort = '9090',
         [Parameter(Mandatory = $False)][pscredential] $Credential
     )
-    
-    $Module = Get-Item -Path $ModulePath
-    $ModuleFolderPath = $Module.Directory.FullName
-    $ModuleName = $Module.Directory.Name
-    $TempDirectory = New-TempDirectory
-    try
-    {
-        $ZipFile = "$($TempDirectory.FullName)\$($ModuleName).zip"
-        New-ZipFile -SourceDir $ModuleFolderPath `
-                    -ZipFilePath $ZipFile `
-                    -OverwriteExisting $True
-        Import-SmaModule -Path $ZipFile `
-                         -WebServiceEndpoint $WebServiceEndpoint `
-                         -Port $WebservicePort `
-                         -Credential $Credential
-    }
-    finally
-    {
-        Remove-Item $TempDirectory -Force -Recurse
-    }
+    $Null = $(
+        try
+        {
+            $Module = Get-Item -Path $ModulePath
+            $ModuleFolderPath = $Module.Directory.FullName
+            $ModuleName = $Module.Directory.Name
+            $TempDirectory = New-TempDirectory
+
+            $ZipFile = "$($TempDirectory.FullName)\$($ModuleName).zip"
+            New-ZipFile -SourceDir $ModuleFolderPath `
+                        -ZipFilePath $ZipFile `
+                        -OverwriteExisting $True
+            Import-SmaModule -Path $ZipFile `
+                             -WebServiceEndpoint $WebServiceEndpoint `
+                             -Port $WebservicePort `
+                             -Credential $Credential
+        }
+        Catch
+        {
+            $Exception = New-Exception -Type 'ImportSmaPowerShellModuleFailure' `
+                                       -Message 'Failed to import a PowerShell module into Sma' `
+                                       -Property @{
+                'ErrorMessage' = (Convert-ExceptionToString -Exception $_) ;
+                'ModulePath' = $ModulePath ;
+                'ModuleName' = $ModuleName ;
+                'Credential' = $Credential.UserName ;
+            }
+            Write-Warning -Message $Exception -WarningAction Continue
+        }
+        finally
+        {
+            Remove-Item $TempDirectory -Force -Recurse
+        }
+    )
 }
 
 <#
