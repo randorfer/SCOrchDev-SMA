@@ -71,11 +71,11 @@ Function Get-BatchSMAVariable
         }
         if($VarCommand -eq (Get-Command -Name 'Get-SMAVariable'))
         {
-            $Variables[$VarName] = & $VarCommand -Name "$SMAVarName" @VarParams
+            $Variables[$VarName] = (& $VarCommand -Name "$SMAVarName" @VarParams).Value
         }
         else
         {
-            $Variables[$VarName] = (& $VarCommand -Name "$SMAVarName" @VarParams).Value
+            $Variables[$VarName] = & $VarCommand -Name "$SMAVarName" @VarParams
         }
         Write-Verbose -Message "Variable [$VarName / $SMAVarName] = [$($Variables[$VarName])]"
     }
