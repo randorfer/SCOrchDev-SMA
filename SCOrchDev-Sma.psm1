@@ -61,12 +61,13 @@ Function Get-BatchSMAVariable
         If(-not [String]::IsNullOrEmpty($Prefix))
         {
             $SMAVarName = "$Prefix-$VarName"
+            $Variables[$VarName] = & $VarCommand -Name "$SMAVarName" @VarParams
         }
         Else
         {
             $SMAVarName = $VarName
+            $Variables[$VarName] = (& $VarCommand -Name "$SMAVarName" @VarParams).Value
         }
-        $Variables[$VarName] = (& $VarCommand -Name "$SMAVarName" @VarParams).Value
         Write-Verbose -Message "Variable [$VarName / $SMAVarName] = [$($Variables[$VarName])]"
     }
     Return (New-Object -TypeName 'PSObject' -Property $Variables)
@@ -383,18 +384,30 @@ Function Set-SmaRunbookTags
 #>
 Function Get-SMARunbookWorker
 {
-    if(Test-LocalDevelopment)
-    {
-        return 'localhost'
-    }
-    else
+    Param(
+        [Parameter(
+            Mandatory = $False
+        )]
+        $WebserviceEndpoint = $Null,
+        
+        [Parameter(
+            Mandatory = $False
+        )]
+        $WebservicePort = $Null
+    )
+    $ErrorActionPreference = 'Stop'
+    try
     {
         if(([System.Net.Dns]::GetHostByName(($env:computerName))).HostName -match '^([^.]+)\.(.*)$')
         {
             $domain = $Matches[2]
         }
 
-        $Workers = Get-SmaRunbookWorkerDeployment -WebServiceEndpoint (Get-LocalAutomationVariableEndpoint)[0]
+        $RunbookWorkerDeploymentParams = @{
+            'WebserviceEndpoint' = Select-FirstValid -Value @($WebserviceEndpoint, (Get-LocalAutomationVariableEndpoint)[0])
+            'Port' = Select-FirstValid -Value @($WebservicePort, 9090)
+        }
+        $Workers = Get-SmaRunbookWorkerDeployment @RunbookWorkerDeploymentParams
         foreach($Worker in $Workers.ComputerName)
         {
             if(-not $Worker.Contains($domain))
@@ -402,7 +415,13 @@ Function Get-SMARunbookWorker
                 $Worker = "$($Worker).$($domain)"
                 Write-Output -InputObject $Worker
             }
+            Write-Output -InputObject $Worker
         }
+    }
+    catch
+    {
+        Write-Exception -Exception $_ -Stream Debug
+        return 'localhost'
     }
 }
 <#
@@ -676,26 +695,40 @@ Function Import-SmaPowerShellModule
         [Parameter(Mandatory = $False)][string]  $WebservicePort = '9090',
         [Parameter(Mandatory = $False)][pscredential] $Credential
     )
-    
-    $Module = Get-Item -Path $ModulePath
-    $ModuleFolderPath = $Module.Directory.FullName
-    $ModuleName = $Module.Directory.Name
-    $TempDirectory = New-TempDirectory
-    try
-    {
-        $ZipFile = "$($TempDirectory.FullName)\$($ModuleName).zip"
-        New-ZipFile -SourceDir $ModuleFolderPath `
-                    -ZipFilePath $ZipFile `
-                    -OverwriteExisting $True
-        Import-SmaModule -Path $ZipFile `
-                         -WebServiceEndpoint $WebServiceEndpoint `
-                         -Port $WebservicePort `
-                         -Credential $Credential
-    }
-    finally
-    {
-        Remove-Item $TempDirectory -Force -Recurse
-    }
+    $Null = $(
+        try
+        {
+            $Module = Get-Item -Path $ModulePath
+            $ModuleFolderPath = $Module.Directory.FullName
+            $ModuleName = $Module.Directory.Name
+            $TempDirectory = New-TempDirectory
+
+            $ZipFile = "$($TempDirectory.FullName)\$($ModuleName).zip"
+            New-ZipFile -SourceDir $ModuleFolderPath `
+                        -ZipFilePath $ZipFile `
+                        -OverwriteExisting $True
+            Import-SmaModule -Path $ZipFile `
+                             -WebServiceEndpoint $WebServiceEndpoint `
+                             -Port $WebservicePort `
+                             -Credential $Credential
+        }
+        Catch
+        {
+            $Exception = New-Exception -Type 'ImportSmaPowerShellModuleFailure' `
+                                       -Message 'Failed to import a PowerShell module into Sma' `
+                                       -Property @{
+                'ErrorMessage' = (Convert-ExceptionToString -Exception $_) ;
+                'ModulePath' = $ModulePath ;
+                'ModuleName' = $ModuleName ;
+                'Credential' = $Credential.UserName ;
+            }
+            Write-Warning -Message $Exception -WarningAction Continue
+        }
+        finally
+        {
+            Remove-Item $TempDirectory -Force -Recurse
+        }
+    )
 }
 
 <#
