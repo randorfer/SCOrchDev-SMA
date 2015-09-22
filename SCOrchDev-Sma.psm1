@@ -58,14 +58,23 @@ Function Get-BatchSMAVariable
     }
     ForEach($VarName in $Name)
     {
+        
         If(-not [String]::IsNullOrEmpty($Prefix))
         {
             $SMAVarName = "$Prefix-$VarName"
-            $Variables[$VarName] = & $VarCommand -Name "$SMAVarName" @VarParams
+            
         }
         Else
         {
             $SMAVarName = $VarName
+            $Variables[$VarName] = (& $VarCommand -Name "$SMAVarName" @VarParams).Value
+        }
+        if($VarCommand -eq (Get-Command -Name 'Get-SMAVariable'))
+        {
+            $Variables[$VarName] = & $VarCommand -Name "$SMAVarName" @VarParams
+        }
+        else
+        {
             $Variables[$VarName] = (& $VarCommand -Name "$SMAVarName" @VarParams).Value
         }
         Write-Verbose -Message "Variable [$VarName / $SMAVarName] = [$($Variables[$VarName])]"
