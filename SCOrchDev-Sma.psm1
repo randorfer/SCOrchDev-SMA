@@ -198,9 +198,11 @@ Function Start-SmaRunbookSync
     [System.Net.ServicePointManager]::CertificatePolicy = New-Object -TypeName IDontCarePolicy
     $SleepTime = 5
     $startTime = Get-Date
-    $RunningStates = @('New', 
+    $RunningStates = @(
+        'New', 
         'Activating', 
-    'Running')
+        'Running'
+    )
 
     $Null = $(
         $jobId = Start-SmaRunbook -Name $Name `
