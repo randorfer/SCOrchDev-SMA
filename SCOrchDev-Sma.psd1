@@ -12,7 +12,7 @@
 RootModule = '.\SCOrchDev-Sma.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.6'
+ModuleVersion = '1.0.7'
 
 # ID used to uniquely identify this module
 GUID = '41dfeede-32f0-42e5-b4b0-43eac3336fcd'
@@ -27,7 +27,7 @@ CompanyName = 'SCOrchDev'
 Copyright = '(c) SCOrchDev. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'Extension of SMA PowerShell modules'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '4.0'
@@ -81,7 +81,7 @@ AliasesToExport = '*'
 ModuleList = @('SCOrchDev-Sma')
 
 # List of all files packaged with this module
-FileList = @('SCOrchDev-Sma.psd1', 'SCOrchDev-Sma.psm1')
+FileList = @('SCOrchDev-Sma.psd1', 'SCOrchDev-Sma.psm1', 'SCOrchDev-Sma.tests.ps1', 'LICENSE', 'README.md')
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess
 # PrivateData = ''
