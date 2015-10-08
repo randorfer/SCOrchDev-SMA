@@ -776,7 +776,7 @@ Function Get-SmaVariablePaged
 
         [Parameter(Mandatory=$false)]
         [String]
-        $WebservicePort='9090',
+        $Port='9090',
 
         [Parameter(Mandatory=$false)]
         [String]
