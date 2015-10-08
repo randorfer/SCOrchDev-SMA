@@ -788,7 +788,7 @@ Function Get-SmaVariablePaged
     )
     $CompletedParameters = Write-StartingMessage
     # Get all variables
-    $variablesURI = "$WebServiceURL`:$WebServicePort/$tenantID/Variables"
+    $variablesURI = "$WebServiceEndpoint`:$Port/$tenantID/Variables"
     if ($Credential) { $variables = Invoke-RestMethod -Uri $variablesURI -Credential $Credential }
     else             { $variables = Invoke-RestMethod -Uri $variablesURI -UseDefaultCredentials }
 
@@ -799,25 +799,44 @@ Function Get-SmaVariablePaged
     { 
         $box.Add($varible) | Out-Null
         $addedToBox = $true
+        Write-Output -InputObject @{
+                'VariableID' = $varible.Content.properties.VariableID
+                'TenantID' = $varible.Content.properties.TenantID
+                'Name' = $varible.Content.properties.Name
+                'Value' = $varible.Content.properties.Value
+                'Description' = $varible.Content.properties.Description
+                'IsEncrypted' = $varible.Content.Properties.IsEncrypted
+                'CreationTime' = $varible.Content.Properties.CreationTime
+                'LastModifiedTime' = $varible.Content.Properties.LastModifiedTime
+        } 
     }
 
     while($addedToBox)
     {
         $addedToBox = $false
-        $variablesURI = "$WebServiceURL`:$WebServicePort/$tenantID/Variables?$`skiptoken=guid'$($box[-1].Content.Properties.VariableID.'#text')'"
+        $variablesURI = "$WebServiceEndpoint`:$Port/$tenantID/Variables?$`skiptoken=guid'$($box[-1].Content.Properties.VariableID.'#text')'"
 
         if($credential) { $variables = Invoke-RestMethod -Uri $variablesURI -Credential $Credential }
         else            { $variables = Invoke-RestMethod -Uri $variablesURI -UseDefaultCredentials }
                     
         $addedToBox = $false
         foreach ($varible in $variables) 
-        { 
+        {
+            Write-Output -InputObject @{
+                'VariableID' = $varible.Content.properties.VariableID
+                'TenantID' = $varible.Content.properties.TenantID
+                'Name' = $varible.Content.properties.Name
+                'Value' = $varible.Content.properties.Value
+                'Description' = $varible.Content.properties.Description
+                'IsEncrypted' = $varible.Content.Properties.IsEncrypted
+                'CreationTime' = $varible.Content.Properties.CreationTime
+                'LastModifiedTime' = $varible.Content.Properties.LastModifiedTime
+            } 
             $box.Add($varible) | Out-Null
             $addedToBox = $true
         }
     }
     Write-CompletedMessage @CompletedParameters
-    return $box
 }
 
 Export-ModuleMember -Function * -Verbose:$False -Debug:$False
