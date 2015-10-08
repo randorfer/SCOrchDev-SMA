@@ -763,27 +763,61 @@ Function Get-WebservicePort
     Return 9090
 }
 
+<#
+    .Synopsis
+        Retrieves all Sma Variables (paged)
+#>
+Function Get-SmaVariablePaged
+{
+    Param(  
+        [Parameter(Mandatory=$true)]  
+        [String]
+        $WebServiceEndpoint,
+
+        [Parameter(Mandatory=$false)]
+        [String]
+        $WebservicePort='9090',
+
+        [Parameter(Mandatory=$false)]
+        [String]
+        $tenantID = '00000000-0000-0000-0000-000000000000',
+        
+        [Parameter(Mandatory=$false)]
+        [pscredential]
+        $Credential
+    )
+    $CompletedParameters = Write-StartingMessage
+    # Get all variables
+    $variablesURI = "$WebServiceURL`:$WebServicePort/$tenantID/Variables"
+    if ($Credential) { $variables = Invoke-RestMethod -Uri $variablesURI -Credential $Credential }
+    else             { $variables = Invoke-RestMethod -Uri $variablesURI -UseDefaultCredentials }
+
+    $addedToBox = $false
+
+    $box = New-Object System.Collections.ArrayList
+    foreach ($varible in $variables) 
+    { 
+        $box.Add($varible) | Out-Null
+        $addedToBox = $true
+    }
+
+    while($addedToBox)
+    {
+        $addedToBox = $false
+        $variablesURI = "$WebServiceURL`:$WebServicePort/$tenantID/Variables?$`skiptoken=guid'$($box[-1].Content.Properties.VariableID.'#text')'"
+
+        if($credential) { $variables = Invoke-RestMethod -Uri $variablesURI -Credential $Credential }
+        else            { $variables = Invoke-RestMethod -Uri $variablesURI -UseDefaultCredentials }
+                    
+        $addedToBox = $false
+        foreach ($varible in $variables) 
+        { 
+            $box.Add($varible) | Out-Null
+            $addedToBox = $true
+        }
+    }
+    Write-CompletedMessage @CompletedParameters
+    return $box
+}
+
 Export-ModuleMember -Function * -Verbose:$False -Debug:$False
-# SIG # Begin signature block
-# MIID1QYJKoZIhvcNAQcCoIIDxjCCA8ICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
-# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUdvjGr/11qlWpA9TIQNI4ONSk
-# oiygggH3MIIB8zCCAVygAwIBAgIQEdV66iePd65C1wmJ28XdGTANBgkqhkiG9w0B
-# AQUFADAUMRIwEAYDVQQDDAlTQ09yY2hEZXYwHhcNMTUwMzA5MTQxOTIxWhcNMTkw
-# MzA5MDAwMDAwWjAUMRIwEAYDVQQDDAlTQ09yY2hEZXYwgZ8wDQYJKoZIhvcNAQEB
-# BQADgY0AMIGJAoGBANbZ1OGvnyPKFcCw7nDfRgAxgMXt4YPxpX/3rNVR9++v9rAi
-# pY8Btj4pW9uavnDgHdBckD6HBmFCLA90TefpKYWarmlwHHMZsNKiCqiNvazhBm6T
-# XyB9oyPVXLDSdid4Bcp9Z6fZIjqyHpDV2vas11hMdURzyMJZj+ibqBWc3dAZAgMB
-# AAGjRjBEMBMGA1UdJQQMMAoGCCsGAQUFBwMDMB0GA1UdDgQWBBQ75WLz6WgzJ8GD
-# ty2pMj8+MRAFTTAOBgNVHQ8BAf8EBAMCB4AwDQYJKoZIhvcNAQEFBQADgYEAoK7K
-# SmNLQ++VkzdvS8Vp5JcpUi0GsfEX2AGWZ/NTxnMpyYmwEkzxAveH1jVHgk7zqglS
-# OfwX2eiu0gvxz3mz9Vh55XuVJbODMfxYXuwjMjBV89jL0vE/YgbRAcU05HaWQu2z
-# nkvaq1yD5SJIRBooP7KkC/zCfCWRTnXKWVTw7hwxggFIMIIBRAIBATAoMBQxEjAQ
-# BgNVBAMMCVNDT3JjaERldgIQEdV66iePd65C1wmJ28XdGTAJBgUrDgMCGgUAoHgw
-# GAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGC
-# NwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQx
-# FgQUpgI7O/bAWZzFHL8IKrKdn3zmZ+IwDQYJKoZIhvcNAQEBBQAEgYBPqprbG+aI
-# 1jfHlslw0yHylcMQB2tYdu7bzzxse12gZdFKRXy4Os5NYktuXH3np0r4BptEDjr4
-# YdGubCNFDbOllws3WNcNqZ4c7DcxQScoV490PRncjuyvJwqAqNMT2oFP2SP9/Air
-# MCllCT9dR2OF9Y0h4xiacDhTq0L5r/hwzg==
-# SIG # End signature block
