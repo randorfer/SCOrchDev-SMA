@@ -839,4 +839,58 @@ Function Get-SmaVariablePaged
     Write-CompletedMessage @CompletedParameters
 }
 
+<#
+    .Synopsis
+        Returns an array of valid running job states for SMA
+#>
+Function Get-SMARunningJobStatus
+{
+    [OutputType([array])]
+    Param()
+    return  @('New','Activating','Running')
+}
+<#
+    .Synopsis
+#>
+Function Restart-SmaJob
+{
+    Param( 
+        [Parameter(Mandatory=$True)] [String]       $WebserviceEndpoint,
+        [Parameter(Mandatory=$True)] [String]       $JobID,
+        [Parameter(Mandatory=$True)] [String]       $SQLServer,
+        [Parameter(Mandatory=$False)][PSCredential] $Credential,
+        [Parameter(Mandatory=$False)][String]       $tenantID = '00000000-0000-0000-0000-000000000000',
+        [Parameter(Mandatory=$False)][String]       $Port = '9090'
+    )
+    
+    [System.Net.ServicePointManager]::CertificatePolicy = new-object IDontCarePolicy
+    
+    $null = $(
+        $RunbookId = (
+            Get-SmaJob -Id $JobID `
+                       -WebserviceEndPoint $WebserviceEndpoint `
+                       -Credential $Credential
+        ).RunbookId
+
+        $JobInputs = Get-SmaJobInput -SqlServer $SQLServer `
+                                     -JobId $JobID
+        
+        $Parameters = @{}
+        Foreach($DataRow in $JobInputs)
+        {
+            if($datarow.Value -is [string]) 
+            {
+                # if it is a string it will be wrapped with " -- remove them 
+                $DataRow.Value = $DataRow.Value.Substring(1,$DataRow.Value.Length - 2)
+            }
+            $Parameters.Add($DataRow.Name, $DataRow.Value)
+        }
+        
+        Start-SmaRunbook -Id $RunbookId `
+                         -Parameters $Parameters `
+                         -Credential $Credential `
+                         -WebServiceEndpoint $WebserviceEndpoint `
+                         -Port $Port
+    )
+}
 Export-ModuleMember -Function * -Verbose:$False -Debug:$False
