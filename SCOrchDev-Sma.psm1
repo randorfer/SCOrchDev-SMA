@@ -121,11 +121,34 @@ function Get-LocalAutomationVariableEndpoint
 #>
 Function Get-SMAJobInStatus
 {
-    Param(  [Parameter(Mandatory = $True) ] [String]$WebServiceEndpoint,
-        [Parameter(Mandatory = $False)] [String]$Port = '9090',
-        [Parameter(Mandatory = $False)] [String]$tenantID = '00000000-0000-0000-0000-000000000000',
-        [Parameter(Mandatory = $True) ] [String]$JobStatus,
-    [Parameter(Mandatory = $False)] [PSCredential]$Credential)
+    Param(  
+        [Parameter(Mandatory = $True)]
+        [String]
+        $WebServiceEndpoint,
+
+        [Parameter(Mandatory = $False)]
+        [String]
+        $Port = '9090',
+
+        [Parameter(Mandatory = $False)]
+        [String]
+        $tenantID = '00000000-0000-0000-0000-000000000000',
+
+        [Parameter(Mandatory = $True)]
+        [ValidateSet(
+            'New','Activating','Running','Completed',
+            'Stopped', 'Blocked', 'Disconnected',
+            'Stopping','Failed','Completed',
+            'Suspending','Suspended','Resuming',
+            'Removing', 'Disconnected'
+        )]
+        [String]
+        $JobStatus,
+
+        [Parameter(Mandatory = $False)]
+        [PSCredential]
+        $Credential
+    )
 
     $BaseUri = "$WebServiceEndpoint`:$Port/$tenantID"
     
